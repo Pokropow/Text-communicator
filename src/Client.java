@@ -1,49 +1,51 @@
 import java.awt.BorderLayout;
 import java.awt.EventQueue;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.WindowEvent;
+import java.awt.event.WindowListener;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 
-import javax.swing.DefaultListModel;
+import javax.swing.DefaultComboBoxModel;
 import javax.swing.JButton;
+import javax.swing.JComboBox;
 import javax.swing.JFrame;
-import javax.swing.JList;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
-import java.awt.event.ActionListener;
-import java.awt.event.ActionEvent;
 
 public class Client {
 	
-	private JFrame frame;
+	private JFrame frmKomunikator;
 	private JTextField textField;
-	private DefaultListModel<String> model;
+	private DefaultComboBoxModel<String> cmodel;
 	private SInterface serv=null;
-	private JTextField textField_1;
+	private JTextField textName;
 	private Communicator clnt;
+	private KInterface partner=null;
+	private JTextArea textArea;
 	
 	boolean registered = false;
 	String name;
 	
-	public static void main(String[] args) {				 
-		 
-		 
+	public static void main(String[] args) {
 		 EventQueue.invokeLater(new Runnable() {
 				public void run() {
 					try {
 						Client window = new Client(args[0]);
-						window.frame.setVisible(true);
+						window.frmKomunikator.setVisible(true);
 					} catch (Exception e) {
 						e.printStackTrace();
 					}
 				}
-			});		 
+			});
 	} 
 	public Client(String host) throws RemoteException
 	{		
-		try 
+		try
 		 {
 			Registry registry = LocateRegistry.getRegistry(host);		
 			serv = (SInterface)registry.lookup("Service");	
@@ -51,42 +53,87 @@ public class Client {
 		 } 
 		 catch (Exception e) 
 		 {
-			 System.out.printf("Error: b³¹d podczas komunikacji z serwerem: %s\n",e.getMessage());
+			 System.out.printf("Error: bÅ‚Ä…d podczas komunikacji z serwerem: %s\n",e.getMessage());
 		 }
+	}
+	
+	void print(String s)
+	{
+		textArea.setText(textArea.getText() + s);
+	}
+	void println(String s)
+	{
+		textArea.setText(textArea.getText() + s + '\n');
+	}
+	void logout() throws RemoteException
+	{
+		registered = false;
+		serv.wypisz(name);
+		clnt=null;
+		partner = null;
 	}
 	private void initialize() throws RemoteException
 	{
-		frame = new JFrame();
-		frame.setBounds(100, 100, 380, 360);
-		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		frmKomunikator = new JFrame();
+		frmKomunikator.setTitle("Komunikator");
+		frmKomunikator.setBounds(100, 100, 380, 360);
+		frmKomunikator.setDefaultCloseOperation(JFrame.HIDE_ON_CLOSE);		
+		frmKomunikator.addWindowListener(new WindowListener() {
+
+			@Override
+			public void windowActivated(WindowEvent arg0) {}
+
+			@Override
+			public void windowClosed(WindowEvent arg0) {}
+
+			@Override
+			public void windowClosing(WindowEvent arg0) {
+				if(registered)
+				{
+					try {
+						logout();
+						System.out.println("Wylogowano");
+					} catch (RemoteException e) {
+						e.printStackTrace();
+					}
+				}
+				frmKomunikator.dispose();
+				System.exit(0);
+			}
+
+			@Override
+			public void windowDeactivated(WindowEvent arg0) {}
+
+			@Override
+			public void windowDeiconified(WindowEvent arg0) {}
+
+			@Override
+			public void windowIconified(WindowEvent arg0) {}
+
+			@Override
+			public void windowOpened(WindowEvent arg0) {}			
+		});
 		
 		JPanel panel = new JPanel();
-		frame.getContentPane().add(panel, BorderLayout.CENTER);
+		frmKomunikator.getContentPane().add(panel, BorderLayout.CENTER);
 		panel.setLayout(null);
 		
 		JScrollPane scrollPane = new JScrollPane();
-		scrollPane.setBounds(10, 44, 235, 198);
+		scrollPane.setBounds(10, 44, 344, 198);
 		panel.add(scrollPane);
 		
-		JTextArea textArea = new JTextArea();
+		textArea = new JTextArea();
 		textArea.setEditable(false);
 		scrollPane.setViewportView(textArea);
 		
-		JScrollPane scrollPane_1 = new JScrollPane();
-		scrollPane_1.setBounds(255, 44, 99, 198);
-		panel.add(scrollPane_1);
+		JButton btnPolacz = new JButton("Po\u0142\u0105cz");		
+		btnPolacz.setBounds(156, 287, 89, 23);
+		panel.add(btnPolacz);
 		
-		model = new DefaultListModel<String>();
-		JList<String> list = new JList<String>(model);		
-		scrollPane_1.setViewportView(list);
-		
-		JButton btnNewButton = new JButton("Po\u0142\u0105cz");
-		btnNewButton.setBounds(10, 287, 89, 23);
-		panel.add(btnNewButton);
-		
-		JButton btnNewButton_1 = new JButton("Roz\u0142\u0105cz");
-		btnNewButton_1.setBounds(255, 287, 99, 23);
-		panel.add(btnNewButton_1);
+		JButton btnRozlacz = new JButton("Roz\u0142\u0105cz");
+		btnRozlacz.setEnabled(false);		
+		btnRozlacz.setBounds(255, 287, 99, 23);
+		panel.add(btnRozlacz);
 		
 		textField = new JTextField();
 		textField.setEditable(false);
@@ -94,31 +141,84 @@ public class Client {
 		panel.add(textField);
 		textField.setColumns(10);
 		
-		JButton btnWylij = new JButton("Wy\u015Blij");
-		btnWylij.setBounds(255, 253, 99, 23);
-		panel.add(btnWylij);		
-		JButton btnNewButton_2 = new JButton("Zarejestruj/Wyrejestruj");
+		JButton btnWyslij = new JButton("Wy\u015Blij");
+		btnWyslij.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				if(partner!=null)
+				{
+					String text = textField.getText();
+					try {
+						partner.pisz(name+":"+text);
+						println(name+":"+text);
+					} catch (RemoteException e1) {
+						e1.printStackTrace();
+					}
+				}
+			}
+		});
+		btnWyslij.setEnabled(false);
+		btnWyslij.setBounds(255, 253, 99, 23);
+		panel.add(btnWyslij);		
+		JButton btnRejestruj = new JButton("Zarejestruj/Wyrejestruj");
 		
-		btnNewButton_2.addActionListener(new ActionListener() {
+		
+		cmodel = new DefaultComboBoxModel<>();
+		JComboBox<String> comboBox = new JComboBox<String>(cmodel);
+		comboBox.setBounds(10, 288, 136, 20);
+		panel.add(comboBox);		
+		
+		btnPolacz.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent arg0) {
+				try
+				{
+					String s = comboBox.getItemAt(comboBox.getSelectedIndex());
+					if(s!=null)
+					{
+						partner = serv.pobierz(s);
+						if(partner!=null)
+						{
+							btnPolacz.setEnabled(false);
+							btnRozlacz.setEnabled(true);
+							btnWyslij.setEnabled(true);
+						}
+					}
+				}
+				catch(Exception e)
+				{
+					
+				}				
+			}
+		});
+		
+		btnRozlacz.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent arg0) {
+				partner=null;
+				btnPolacz.setEnabled(true);
+				btnRozlacz.setEnabled(false);
+				btnWyslij.setEnabled(false);
+			}
+		});
+		
+		btnRejestruj.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent arg0) {				
 				try {
 					if(!registered)
 					{
-						String s = textField_1.getText();						
+						String s = textName.getText();
 						int res = serv.zapisz(clnt, s);
 						if(res!=0)
 						{
 							registered = true;
-							textField_1.setEditable(false);
+							textName.setEditable(false);
 							name = s;
 							textField.setEditable(true);
 							String[] names = serv.listuj();
-							model.clear();
+							cmodel.removeAllElements();
 							for(String str : names)
 							{
 								if(!str.equals(s))
 								{
-									model.addElement(str);
+									cmodel.addElement(str);
 								}
 							}
 						}
@@ -127,22 +227,23 @@ public class Client {
 					{
 						registered=false;
 						serv.wypisz(name);
-						model.clear();
-						textField_1.setEditable(true);
+						cmodel.removeAllElements();
+						textName.setEditable(true);
 						textField.setEditable(false);
 					}					
 				} catch (RemoteException e) {
+					
 					e.printStackTrace();
 				}				
 			}
 		});
-		btnNewButton_2.setBounds(208, 10, 146, 23);
-		panel.add(btnNewButton_2);
+		btnRejestruj.setBounds(208, 10, 146, 23);
+		panel.add(btnRejestruj);
 		
-		textField_1 = new JTextField();
-		textField_1.setBounds(10, 11, 188, 20);
-		panel.add(textField_1);
-		textField_1.setColumns(10);
+		textName = new JTextField();
+		textName.setBounds(10, 11, 188, 20);
+		panel.add(textName);
+		textName.setColumns(10);	
 		
 		
 		clnt = new Communicator();
@@ -155,12 +256,12 @@ public class Client {
 					{
 						String[] names;						
 						names = serv.listuj();
-						model.clear();
+						cmodel.removeAllElements();
 						for(String str : names)
 						{							
 							if(!str.equals(name))
 							{							
-								model.addElement(str);
+								cmodel.addElement(str);
 							}
 						}
 					}
@@ -170,7 +271,6 @@ public class Client {
 					}
 				}	
 				catch (RemoteException e1) {
-					// TODO Auto-generated catch block
 					e1.printStackTrace();
 				}	
 			}			

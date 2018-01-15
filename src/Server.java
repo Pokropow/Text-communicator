@@ -1,5 +1,3 @@
-
-
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
@@ -9,23 +7,23 @@ public class Server {
 	public static void main(String[] args) {			 
 		try
 		{
-			Service service = new Service();		
+			Service service = new Service();
 			SInterface stub = (SInterface)service;
 			Registry reg = LocateRegistry.getRegistry();
 			reg.bind("Service", stub);
 		}
 		catch (RemoteException e) 
 		{			
-			System.out.println("B³¹d podczas zak³adania serwera");
+			System.out.println("BÅ‚Ä…d podczas zakÅ‚adania serwera");
 			return;
 		}
 		catch(Exception e)
 		{
-			System.out.println("B³êdny url");
+			System.out.println("BÅ‚Ä™dny url");
 			e.printStackTrace();
 			return;
 		}
-		System.out.println("Serwer dzia³a");
+		System.out.println("Serwer dziaÅ‚a");
 	}
 
 }

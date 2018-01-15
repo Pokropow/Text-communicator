@@ -1,8 +1,5 @@
 
-import java.rmi.AlreadyBoundException;
-import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
-import java.rmi.registry.LocateRegistry;
 import java.rmi.server.UnicastRemoteObject;
 import java.util.TreeMap;
 
@@ -20,37 +17,51 @@ public class Service extends UnicastRemoteObject implements SInterface {
 		//System.out.printf("Rejestracja nazwy \"%s\"\n",n);
 		if(map.containsKey(n))
 		{
-			System.out.printf("U¿ytkownik %s próbowa³ nawi¹zaæ po³¹czenie pod zajêt¹ nazw¹\n",n);
+			System.out.printf("UÅ¼ytkownik %s prÃ³bowaÅ‚ nawiÄ…zaÄ‡ poÅ‚Ä…czenie pod zajÄ™tÄ… nazwÄ…\n",n);
 			return 0;
 		}
 		map.put(n, u);
-		System.out.printf("U¿ytkownik %s po³¹czy³ siê\n",n);
-		try {
+		System.out.printf("UÅ¼ytkownik %s poÅ‚Ä…czyÅ‚ siÄ™\n",n);
+		/*try {
 			LocateRegistry.getRegistry().bind(n, u);
 		} catch (AlreadyBoundException e) {
 			e.printStackTrace();
-		}
+		}*/
 		u.pisz("Witaj "+n);
-		for(KInterface clnt : map.values())
-		{
-			clnt.pisz("");
-		}
+		pingClients();
 		return 1;
+	}
+	
+	void pingClients() throws RemoteException
+	{
+		for(String s : map.keySet())
+		{
+			KInterface clnt = map.get(s);
+			try 
+			{
+				clnt.pisz("");
+			} 
+			catch (RemoteException e) 
+			{
+				map.remove(s);
+			}
+		}
 	}
 
 	@Override
 	public int wypisz(String n) throws RemoteException {
-		map.remove(n);
-		for(KInterface clnt : map.values())
+		if(!map.containsKey(n))
 		{
-			clnt.pisz("");
-		}
-		try {
-			LocateRegistry.getRegistry().unbind(n);
-			System.out.printf("U¿ytkownik %s roz³¹czy³ siê\n",n);
-		} catch (NotBoundException e) {
 			return 0;
 		}
+		map.remove(n);
+		pingClients();
+		/*try {
+			//LocateRegistry.getRegistry().unbind(n);
+			System.out.printf("Uï¿½ytkownik %s rozï¿½ï¿½czyï¿½ siï¿½\n",n);
+		} catch (NotBoundException e) {
+			return 0;
+		}*/
 		return 1;
 	}
 
